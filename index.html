@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Voice Translator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: center;
+      background: linear-gradient(135deg, #1f4037, #99f2c8);
+      color: #fff;
+    }
+    header {
+      width: 100%;
+      padding: 20px;
+      background: rgba(0,0,0,0.3);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.5);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    select, button {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    select {
+      background: #fff;
+      color: #333;
+    }
+    button {
+      background: #ff9800;
+      color: #fff;
+    }
+    button:hover {
+      background: #e68900;
+      transform: scale(1.05);
+    }
+    .box {
+      background: rgba(0,0,0,0.4);
+      padding: 20px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 600px;
+      margin-top: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .box p {
+      font-size: 18px;
+      margin: 10px 0;
+      line-height: 1.5;
+    }
+    .status {
+      margin-top: 10px;
+      font-style: italic;
+      color: #ffeb3b;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5rem; }
+      select, button { font-size: 14px; padding: 10px; }
+      .box p { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎤 Live Voice Translator </h1>
+  </header>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div>
+      <label>🎙️ Input:</label>
+      <select id="inputLang">
+        <option value="hi-IN">Hindi</option>
+        <option value="bn-IN">Bengali</option>
+        <option value="mai-IN">Maithili</option>
+        <option value="bho-IN">Bhojpuri</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="te-IN">Telugu</option>
+        <option value="mr-IN">Marathi</option>
+        <option value="gu-IN">Gujarati</option>
+        <option value="kn-IN">Kannada</option>
+        <option value="ml-IN">Malayalam</option>
+        <option value="pa-IN">Punjabi</option>
+        <option value="or-IN">Odia</option>
+        <option value="as-IN">Assamese</option>
+        <option value="ur-IN">Urdu</option>
+        <option value="en-US">English</option>
+      </select>
+    </div>
+
+    <div>
+      <label>🌍 Output:</label>
+      <select id="outputLang">
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="bn">Bengali</option>
+        <option value="mai">Maithili</option>
+        <option value="bho">Bhojpuri</option>
+        <option value="ta">Tamil</option>
+        <option value="te">Telugu</option>
+        <option value="mr">Marathi</option>
+        <option value="gu">Gujarati</option>
+        <option value="kn">Kannada</option>
+        <option value="ml">Malayalam</option>
+        <option value="pa">Punjabi</option>
+        <option value="or">Odia</option>
+        <option value="as">Assamese</option>
+        <option value="ur">Urdu</option>
+      </select>
+    </div>
+  </div>
+
+  <button onclick="toggleRecognition()" id="startBtn">▶️ Start Translator</button>
+  <p class="status" id="statusText">Press Start to begin...</p>
+
+  <!-- Output Box -->
+  <div class="box">
+    <p id="original"><b>You said:</b> ...</p>
+    <p id="translated"><b>Translated:</b> ...</p>
+  </div>
+
+  <script>
+    let recognizing = false;
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.continuous = true; // continuous mode
+    recognition.interimResults = false;
+
+    function toggleRecognition() {
+      if (!recognizing) {
+        startRecognition();
+      } else {
+        stopRecognition();
+      }
+    }
+
+    function startRecognition() {
+      const inLang = document.getElementById("inputLang").value;
+      recognition.lang = inLang;
+      recognition.start();
+      recognizing = true;
+      document.getElementById("statusText").innerText = "🎙️ Listening... Speak now!";
+      document.getElementById("startBtn").innerText = "⏹ Stop Translator";
+    }
+
+    function stopRecognition() {
+      recognition.stop();
+      recognizing = false;
+      document.getElementById("statusText").innerText = "⏹ Stopped.";
+      document.getElementById("startBtn").innerText = "▶️ Start Translator";
+    }
+
+    recognition.onresult = async (event) => {
+      const text = event.results[event.results.length-1][0].transcript;
+      document.getElementById("original").innerHTML = "<b>You said:</b> " + text;
+
+      const inLang = document.getElementById("inputLang").value.split("-")[0];
+      const outLang = document.getElementById("outputLang").value;
+
+      try {
+        const res = await fetch(
+          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${inLang}|${outLang}`
+        );
+        const data = await res.json();
+        const translatedText = data.responseData.translatedText;
+
+        document.getElementById("translated").innerHTML =
+          "<b>Translated:</b> " + translatedText;
+
+        const utter = new SpeechSynthesisUtterance(translatedText);
+        utter.lang = outLang;
+        speechSynthesis.speak(utter);
+      } catch (err) {
+        console.error(err);
+        alert("Translation failed: " + err);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      document.getElementById("statusText").innerText = "⚠️ Error: " + event.error;
+      recognizing = false;
+      document.getElementById("startBtn").innerText = "▶️ Start Translator";
+    };
+  </script>
+</body>
+</html>
